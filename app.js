@@ -23,11 +23,13 @@ var server = http.createServer(function(req, res){
 
     var uri = url.parse(req.url);
     var mType = path.parse(req.url);
+
     //console.log(uri);
 
     var mimeType = {
         '.html' : 'text/html',
         '.jpg' : 'image/*',
+        '.png' : 'image/*',
         '.jpeg' : 'image/*',
         '.gif' : 'image/*',
         '.css' : 'text/css',
@@ -103,7 +105,7 @@ var server = http.createServer(function(req, res){
                                     stream.on('end', function(){
                                         res.end();
                                     });
-                                }
+                                }    
                                 break;
                             case '/uploadNewSongs' :
                                 if (req.method === 'GET'){
@@ -113,8 +115,15 @@ var server = http.createServer(function(req, res){
                                         res.end();
                                     });
                                 }else if(req.method === 'POST'){
-                                    console.log('here i am in post request', req.headers);
+                                    console.log('here i am in post request', req.session.data.songStuff);
 
+                                    if( req.session.data.songStuff === null || req.session.data.songStuff === undefined){
+                                        req.session.data.songStuff = [];
+                                    }else if(req.session.data.songStuff){
+                                        if(req.session.data.songStuff.length > 2){
+                                            req.session.data.songStuff = [];
+                                        }
+                                    }
                                     //--------------------------------------------- UPLOAD FILE --------------------------
 
                                     var busBoy = new BusBoy({headers : req.headers});
@@ -124,7 +133,7 @@ var server = http.createServer(function(req, res){
                                         var tempFile = filename.split('.');
                                         var uploadedFileName = path.join(__dirname, '/client/src/public/images/albumsAndSongs/'+Math.random().toString().split('.')[1]+'(Junction.com)'+path.extname(filename));
                                         file.pipe(fs.createWriteStream(uploadedFileName));
-                                        req.session.data.uploadedSong = uploadedFileName;
+                                        req.session.data.songStuff.push(uploadedFileName.split('client')[1]);
                                     });
                                     busBoy.on('field', function(fieldname, val, fieldnameTruncated, valTruncated) {
                                         console.log('Field [' + fieldname + ']: value: '+ query.stringify(val), fieldnameTruncated, valTruncated);
@@ -132,12 +141,48 @@ var server = http.createServer(function(req, res){
                                     busBoy.on('finish', function() {
                                         console.log('Done parsing form!');
                                         res.writeHead(200, { 'Content-Type' : 'application/json'});
-                                        res.write(JSON.stringify({ok : 'ok'}));
+                                        res.write(JSON.stringify({ok : 'ok', songStuff : req.session.data.songStuff}));
                                         res.end();
                                     });
                                     req.pipe(busBoy);
                                 }
                                 break;
+                            case '/registerSongs': 
+                            if (req.method === 'GET'){
+                                res.writeHead(200, {'Content-Type': String.valueOf(mimeType[mType.ext])})
+                                var stream = fs.createReadStream(path.join(__dirname, '/client/src/index.html')).pipe(res);
+                                stream.on('end', function(){
+                                    res.end();
+                                });
+                            }else if (req.method === 'POST'){
+                                var body = '';
+                                req
+                                    .on('data', function (data){
+                                   if(data){
+                                       body +=data;
+                                   }
+                                })
+                                    .on('end', function(){
+
+                                        task.registerSongs( JSON.parse(body) , req.session.data.songStuff, function(response){
+                                            if(response === 'ok'){
+                                                res.writeHead(200, { 'Content-Type' : 'application/json'});
+                                                res.write(JSON.stringify({response : 'ok'}));
+                                                req.session.data.songStuff = [];
+                                                res.end();
+                                            }else if(response === 'already'){
+                                                res.writeHead(200, { 'Content-Type' : 'application/json'});
+                                                res.write(JSON.stringify({response : 'Song Already Exsists!...'}));
+                                                res.end();
+                                            }else{
+                                                res.writeHead(500, { 'Content-Type' : 'application/json'});
+                                                res.write(JSON.stringify({response : 'Server Error'}));
+                                                res.end();
+                                            }
+                                        });
+                                })
+                            }
+                            break;
                             case '/registerUser':
                                 if (req.method === 'GET'){
                                     res.writeHead(200, {'Content-Type': String.valueOf(mimeType[mType.ext])})
@@ -173,6 +218,49 @@ var server = http.createServer(function(req, res){
                                     })
                                 }
                                 break;
+                            case '/registerSongGroupType':
+
+                                //THIS USL IS INDEPENDENT TO GET AND POST DATA
+                                if (req.method === 'GET'){
+                                    task.getTypes(function(response){
+                                                if(response && response.length !== 0){
+                                                    res.writeHead(200, { 'Content-Type' : 'application/json'});
+                                                    res.write(JSON.stringify({response : 'ok', gType : response}));
+                                                    res.end();
+                                                }else{
+                                                    res.writeHead(500, { 'Content-Type' : 'application/json'});
+                                                    res.write(JSON.stringify({response : 'Server Error'}));
+                                                    res.end();
+                                                }
+                                            });
+                                }else if (req.method === 'POST'){
+                                    var body = '';
+                                    req
+                                        .on('data', function (data){
+                                       if(data){
+                                           body +=data;
+                                       }
+                                    })
+                                        .on('end', function(){
+
+                                            task.registerTypes( JSON.parse(body), function(response){
+                                                if(response === 'ok'){
+                                                    res.writeHead(200, { 'Content-Type' : 'application/json'});
+                                                    res.write(JSON.stringify({response : 'ok', gType : JSON.parse(body).gType}));
+                                                    res.end();
+                                                }else if(response === 'not_ok'){
+                                                    res.writeHead(500, { 'Content-Type' : 'application/json'});
+                                                    res.write(JSON.stringify({response : 'Server Error'}));
+                                                    res.end();
+                                                }else{
+                                                    res.writeHead(500, { 'Content-Type' : 'application/json'});
+                                                    res.write(JSON.stringify({response : 'Server Error'}));
+                                                    res.end();
+                                                }
+                                            });
+                                    })
+                                }
+                                break;
                             case '/uploadProfileImage':
                                 if (req.method === 'POST'){
                                     var busBoy = new BusBoy({headers : req.headers});
@@ -190,7 +278,7 @@ var server = http.createServer(function(req, res){
                                     busBoy.on('finish', function() {
                                         console.log('Done parsing form!');
                                         res.writeHead(200, { 'Content-Type' : 'application/json'});
-                                        res.write(JSON.stringify({ok : 'ok'}));
+                                        res.write(JSON.stringify({ok : 'ok', image : req.session.data.profileImage}));
                                         res.end();
                                     });
                                     req.pipe(busBoy);
