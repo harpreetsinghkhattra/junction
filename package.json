@@ -1,0 +1,19 @@
+{
+  "name": "junction",
+  "version": "1.0.0",
+  "description": "A song finder port",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/harpreetsinghkhattra/junction.git"
+  },
+  "author": "Harpreet Singh Khattra",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/harpreetsinghkhattra/junction/issues"
+  },
+  "homepage": "https://github.com/harpreetsinghkhattra/junction#readme"
+}
