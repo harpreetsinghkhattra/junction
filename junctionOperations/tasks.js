@@ -132,3 +132,27 @@ module.exports.getTypes = function(cb){
         }
     })
 }
+
+/* this method will change further becuse, i will have the data under some check like
+*  on the bases of followers, on the viewers that is status and also album matters here.
+*/
+module.exports.getSongs = function(cb){
+
+    connection.connect(function(err, db){
+        if(err) throw err;
+        if(db){
+            var songTypes = db.collection('albums');
+            songTypes.find({}).toArray(function(err, data){ // i having data with no checks
+                if(err) throw err;
+                console.log('here is data', data.length);
+                if(data && data.length !== 0 || data.length !== undefined){
+
+                    cb(data);
+
+                }else{
+                    cb('not_ok');
+                }
+            })
+        }
+    })
+}

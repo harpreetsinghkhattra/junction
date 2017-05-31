@@ -183,6 +183,30 @@ var server = http.createServer(function(req, res){
                                 })
                             }
                             break;
+                            case '/getSongs': 
+                            // here it is independent method
+                            if (req.method === 'GET'){
+                                res.writeHead(200, {'Content-Type': String.valueOf(mimeType[mType.ext])})
+                                var stream = fs.createReadStream(path.join(__dirname, '/client/src/index.html')).pipe(res);
+                                stream.on('end', function(){
+                                    res.end();
+                                });
+                            }else if (req.method === 'POST'){
+                                
+                                task.getSongs ( function(response){
+                                            if (response && response.length !== 0){
+                                                res.writeHead(200, { 'Content-Type' : 'application/json'});
+                                                res.write(JSON.stringify({response : 'ok', data : response}));
+                                                res.end();
+                                            }else{
+                                                res.writeHead(500, { 'Content-Type' : 'application/json'});
+                                                res.write(JSON.stringify({response : 'Server Error'}));
+                                                res.end();
+                                            }
+                                        });
+
+                            }
+                            break;
                             case '/registerUser':
                                 if (req.method === 'GET'){
                                     res.writeHead(200, {'Content-Type': String.valueOf(mimeType[mType.ext])})
@@ -291,6 +315,25 @@ var server = http.createServer(function(req, res){
                                     stream.on('end', function(){
                                         res.end();
                                     });
+                                }else if (req.method === 'POST'){
+                                    res.writeHead(200, {'Content-Type': String.valueOf(mimeType[mType.ext])})
+                                    res.write(JSON.stringify({ok : 'ok', info : req.session.data.playingSong }));
+                                    res.end();
+                                    
+                                }else if (req.method === 'PUT'){
+                                    var body = '';
+                                    req.on('data', (data)=>{ 
+                                        if(data){
+                                            body += data;
+                                        }
+                                    })
+                                        .on('end', ()=>{
+                                            console.log('here is body', body)
+                                            req.session.data.playingSong = JSON.parse(body);
+                                            res.writeHead(200, {'Content-Type': String.valueOf(mimeType[mType.ext])})
+                                            res.write(JSON.stringify({ok : 'ok'}));
+                                            res.end();
+                                        })
                                 }
                                 break;
                             case '/test':
